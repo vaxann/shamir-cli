@@ -11,11 +11,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// version will be set by build flags
+var version = "dev"
+
 var rootCmd = &cobra.Command{
-	Use:   "shamir-cli",
-	Short: "CLI application for secret sharing using Shamir's algorithm",
-	Long: `Application for splitting a string into parts with the ability to recover
-from fewer parts using Shamir's secret sharing algorithm.`,
+	Use:     "shamir-cli",
+	Short:   "CLI application for secret sharing using Shamir's algorithm",
+	Long:    `Application for splitting a string into parts with the ability to recover from fewer parts using Shamir's secret sharing algorithm.`,
+	Version: version,
 }
 
 var splitCmd = &cobra.Command{

@@ -14,7 +14,20 @@ Shamir's Secret Sharing is a cryptographic method that allows splitting a secret
 
 ## Installation
 
+### Download Pre-built Binaries
+
+Download the latest release for your platform from the [GitHub Releases page](../../releases).
+
+Available platforms:
+- Linux (AMD64, ARM64)
+- macOS (Intel, Apple Silicon)
+- Windows (AMD64)
+
+### Build from Source
+
 ```bash
+git clone <repository-url>
+cd shamir-cli
 go mod tidy
 go build -o shamir-cli
 ```
@@ -80,4 +93,25 @@ Recovers the secret from the specified parts.
 - Cryptographically secure algorithm
 - No additional keys or passwords required
 
-See detailed usage examples in the `examples.md` file.
+## Development
+
+The project uses GitHub Actions for continuous integration and automated releases:
+
+- **Pull Requests**: Automatically run tests, formatting checks, and builds
+- **Releases**: Automatic cross-platform builds on every commit to main branch
+- **Tagged Releases**: Create proper releases by pushing git tags (e.g., `v1.0.0`)
+
+### Testing
+
+```bash
+go test ./shamir -v          # Run tests
+go test ./shamir -bench=.    # Run benchmarks
+go test ./shamir -cover      # Run with coverage
+```
+
+## Documentation
+
+- [`examples.md`](examples.md) - Detailed usage examples
+- [`TESTING.md`](TESTING.md) - Testing information and results
+- [`RELEASE.md`](RELEASE.md) - Release process documentation
+- [`.github/README.md`](.github/README.md) - GitHub Actions documentation
