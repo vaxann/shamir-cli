@@ -1,107 +1,107 @@
-# Примеры использования Shamir CLI
+# Shamir CLI Usage Examples
 
-## Основные команды
+## Basic Commands
 
-### Разделение секрета
+### Secret Splitting
 
 ```bash
-# Разделить секрет на 5 частей, для восстановления нужно 3 части
-./shamir-cli split "Мой секретный пароль" 5 3
+# Split a secret into 5 parts, 3 parts needed for recovery
+./shamir-cli split "My secret password" 5 3
 
-# Результат:
-# Секрет разделен на 5 частей, для восстановления требуется 3 частей:
-# Часть 1: 1:a98aecae01fe585fb3b74ff8256028697f84681355b932fadc7f5260ec19ee3dc681af
-# Часть 2: 2:8239560cf29a3978a7e63010930ceec867e16495e64cc4a765446fe7135624010f0f77
-# ... остальные части
+# Result:
+# Secret split into 5 parts, 3 parts required for recovery:
+# Part 1: 1:a98aecae01fe585fb3b74ff8256028697f84681355b932fadc7f5260ec19ee3dc681af
+# Part 2: 2:8239560cf29a3978a7e63010930ceec867e16495e64cc4a765446fe7135624010f0f77
+# ... other parts
 ```
 
-### Восстановление секрета
+### Secret Recovery
 
 ```bash
-# Восстановить секрет из любых 3 частей
+# Recover secret from any 3 parts
 ./shamir-cli combine "1:a98aecae01fe585fb3b74ff8256028697f84681355b932fadc7f5260ec19ee3dc681af,3:fb126a1723deb0a7c4e4ae6a66d1172ac8dc2c560c25468c39eb8357449e461cf8bceb,5:bbb42ecd1f283adbaf56a3445d5923a9efbc9dd489b96d966225a325bf3c0e13bbe0a0"
 
-# Результат:
-# Восстановленный секрет: Мой секретный пароль
+# Result:
+# Recovered secret: My secret password
 ```
 
-## Практические примеры
+## Practical Examples
 
-### Пример 1: Резервное копирование пароля
+### Example 1: Password Backup
 
 ```bash
-# Создать резервную копию пароля на 7 частей, нужно 4 для восстановления
+# Create password backup with 7 parts, 4 needed for recovery
 ./shamir-cli split "SuperSecretPassword123!" 7 4
 
-# Результат позволяет раздать части 7 разным людям
-# Любые 4 из них смогут восстановить пароль
+# Result allows distributing parts to 7 different people
+# Any 4 of them can recover the password
 ```
 
-### Пример 2: Защита криптографического ключа
+### Example 2: Cryptographic Key Protection
 
 ```bash
-# Разделить ключ на 10 частей, нужно 6 для восстановления
+# Split key into 10 parts, 6 needed for recovery
 ./shamir-cli split "abcdef123456789" 10 6
 
-# Можно хранить части в разных местах для максимальной безопасности
+# Parts can be stored in different locations for maximum security
 ```
 
-### Пример 3: Минимальная схема
+### Example 3: Minimal Scheme
 
 ```bash
-# Простейшая схема: 3 части, нужно 2
+# Simplest scheme: 3 parts, 2 needed
 ./shamir-cli split "test" 3 2
 
-# Результат:
-# Часть 1: 1:4b8e5927
-# Часть 2: 2:63a71c45
-# Часть 3: 3:7bc56f23
+# Result:
+# Part 1: 1:4b8e5927
+# Part 2: 2:63a71c45
+# Part 3: 3:7bc56f23
 
-# Восстановление любыми двумя частями:
+# Recovery with any two parts:
 ./shamir-cli combine "1:4b8e5927,3:7bc56f23"
-# Результат: test
+# Result: test
 ```
 
-## Важные особенности
+## Important Features
 
-### Безопасность
-- Любое количество частей меньше порога не может восстановить секрет
-- Части выглядят как случайные данные
-- Каждый запуск создает разные части для одного секрета
+### Security
+- Any number of parts below threshold cannot recover the secret
+- Parts look like random data
+- Each run creates different parts for the same secret
 
-### Ограничения
-- Максимум 255 частей
-- Минимум 2 части для восстановления
-- Общее количество частей должно быть >= порога
+### Limitations
+- Maximum 255 parts
+- Minimum 2 parts for recovery
+- Total number of parts must be >= threshold
 
-### Тестирование
+### Testing
 ```bash
-# Встроенный тест алгоритма
+# Built-in algorithm test
 ./shamir-cli test
 
-# Результат покажет успешность работы алгоритма
+# Result will show algorithm success
 ```
 
-## Сценарии использования
+## Usage Scenarios
 
-1. **Корпоративная безопасность**: Разделение пароля администратора между несколькими сотрудниками
-2. **Личная безопасность**: Резервное копирование важных паролей
-3. **Криптография**: Защита приватных ключей
-4. **Семейная безопасность**: Доступ к важным данным при участии нескольких членов семьи
+1. **Corporate Security**: Split administrator password between multiple employees
+2. **Personal Security**: Backup important passwords
+3. **Cryptography**: Protect private keys
+4. **Family Security**: Access to important data only with participation of multiple family members
 
-## Устранение проблем
+## Troubleshooting
 
-### Неверный формат части
+### Invalid Part Format
 ```bash
-# Неправильно:
+# Wrong:
 ./shamir-cli combine "1-abcdef,2-123456"
 
-# Правильно:
+# Correct:
 ./shamir-cli combine "1:abcdef,2:123456"
 ```
 
-### Недостаточно частей
+### Insufficient Parts
 ```bash
-# Если нужно 3 части, а дали 2, результат будет неверным
-./shamir-cli combine "1:abcdef,2:123456"  # Неверный результат
+# If 3 parts needed but only 2 provided, result will be incorrect
+./shamir-cli combine "1:abcdef,2:123456"  # Incorrect result
 ```

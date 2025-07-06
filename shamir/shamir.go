@@ -6,13 +6,13 @@ import (
 	"fmt"
 )
 
-// Share представляет одну часть секрета
+// Share represents one part of the secret
 type Share struct {
 	ID    byte   `json:"id"`
 	Value []byte `json:"value"`
 }
 
-// Готовые таблицы для арифметики в GF(2^8)
+// Lookup tables for arithmetic in GF(2^8)
 var gfMulTable [256][256]byte
 var gfInvTable [256]byte
 
@@ -20,23 +20,23 @@ func init() {
 	initGF()
 }
 
-// initGF инициализирует таблицы для арифметики в GF(2^8)
+// initGF initializes tables for arithmetic in GF(2^8)
 func initGF() {
-	// Инициализация таблицы умножения
+	// Initialize multiplication table
 	for a := 0; a < 256; a++ {
 		for b := 0; b < 256; b++ {
 			gfMulTable[a][b] = gfMulPrimitive(byte(a), byte(b))
 		}
 	}
 
-	// Инициализация таблицы обратных элементов
+	// Initialize inverse elements table
 	gfInvTable[0] = 0
 	for i := 1; i < 256; i++ {
 		gfInvTable[i] = gfInvPrimitive(byte(i))
 	}
 }
 
-// gfMulPrimitive выполняет умножение в GF(2^8) без использования таблиц
+// gfMulPrimitive performs multiplication in GF(2^8) without using tables
 func gfMulPrimitive(a, b byte) byte {
 	if a == 0 || b == 0 {
 		return 0
@@ -50,20 +50,20 @@ func gfMulPrimitive(a, b byte) byte {
 		highBit := (a & 0x80) != 0
 		a <<= 1
 		if highBit {
-			a ^= 0x1B // неприводимый полином x^8 + x^4 + x^3 + x + 1
+			a ^= 0x1B // irreducible polynomial x^8 + x^4 + x^3 + x + 1
 		}
 		b >>= 1
 	}
 	return result
 }
 
-// gfInvPrimitive вычисляет обратный элемент в GF(2^8) методом перебора
+// gfInvPrimitive calculates the inverse element in GF(2^8) using brute force
 func gfInvPrimitive(a byte) byte {
 	if a == 0 {
 		return 0
 	}
 	
-	// Перебираем все возможные значения
+	// Try all possible values
 	for i := 1; i < 256; i++ {
 		if gfMulPrimitive(a, byte(i)) == 1 {
 			return byte(i)
@@ -72,27 +72,27 @@ func gfInvPrimitive(a byte) byte {
 	return 0
 }
 
-// gfMul выполняет умножение в GF(2^8) используя таблицы
+// gfMul performs multiplication in GF(2^8) using tables
 func gfMul(a, b byte) byte {
 	return gfMulTable[a][b]
 }
 
-// gfInv вычисляет обратный элемент в GF(2^8) используя таблицы
+// gfInv calculates the inverse element in GF(2^8) using tables
 func gfInv(a byte) byte {
 	return gfInvTable[a]
 }
 
-// gfAdd выполняет сложение в GF(2^8) (XOR)
+// gfAdd performs addition in GF(2^8) (XOR)
 func gfAdd(a, b byte) byte {
 	return a ^ b
 }
 
-// gfSub выполняет вычитание в GF(2^8) (XOR)
+// gfSub performs subtraction in GF(2^8) (XOR)
 func gfSub(a, b byte) byte {
 	return a ^ b
 }
 
-// evaluatePolynomial вычисляет значение полинома в точке x
+// evaluatePolynomial calculates the value of a polynomial at point x
 func evaluatePolynomial(coeffs []byte, x byte) byte {
 	if len(coeffs) == 0 {
 		return 0
@@ -109,36 +109,36 @@ func evaluatePolynomial(coeffs []byte, x byte) byte {
 	return result
 }
 
-// Split разделяет секрет на n частей, где k частей необходимо для восстановления
+// Split divides a secret into n parts, where k parts are needed for recovery
 func Split(secret []byte, n, k int) ([]Share, error) {
 	if k < 2 {
-		return nil, errors.New("k должно быть не менее 2")
+		return nil, errors.New("k must be at least 2")
 	}
 	if n < k {
-		return nil, errors.New("n должно быть не менее k")
+		return nil, errors.New("n must be at least k")
 	}
 	if n > 255 {
-		return nil, errors.New("n не может быть больше 255")
+		return nil, errors.New("n cannot be greater than 255")
 	}
 	
 	shares := make([]Share, n)
 	
-	// Для каждого байта секрета создаем отдельный полином
+	// For each byte of the secret, create a separate polynomial
 	for byteIndex := 0; byteIndex < len(secret); byteIndex++ {
-		// Создаем случайные коэффициенты для полинома степени k-1
+		// Create random coefficients for polynomial of degree k-1
 		coeffs := make([]byte, k)
-		coeffs[0] = secret[byteIndex] // свободный член - это байт секрета
+		coeffs[0] = secret[byteIndex] // constant term is the secret byte
 		
-		// Генерируем случайные коэффициенты для остальных степеней
+		// Generate random coefficients for other degrees
 		for i := 1; i < k; i++ {
 			randomBytes := make([]byte, 1)
 			rand.Read(randomBytes)
 			coeffs[i] = randomBytes[0]
 		}
 		
-		// Вычисляем значения полинома для каждой части
+		// Calculate polynomial values for each part
 		for i := 0; i < n; i++ {
-			shareID := byte(i + 1) // ID части (от 1 до n)
+			shareID := byte(i + 1) // Share ID (from 1 to n)
 			shareValue := evaluatePolynomial(coeffs, shareID)
 			
 			if byteIndex == 0 {
@@ -154,25 +154,25 @@ func Split(secret []byte, n, k int) ([]Share, error) {
 	return shares, nil
 }
 
-// Combine восстанавливает секрет из частей
+// Combine recovers a secret from parts
 func Combine(shares []Share) ([]byte, error) {
 	if len(shares) < 2 {
-		return nil, errors.New("необходимо минимум 2 части")
+		return nil, errors.New("minimum 2 parts required")
 	}
 	
-	// Проверяем, что все части имеют одинаковую длину
+	// Check that all parts have the same length
 	secretLen := len(shares[0].Value)
 	for i := 1; i < len(shares); i++ {
 		if len(shares[i].Value) != secretLen {
-			return nil, errors.New("все части должны иметь одинаковую длину")
+			return nil, errors.New("all parts must have the same length")
 		}
 	}
 	
 	secret := make([]byte, secretLen)
 	
-	// Восстанавливаем каждый байт секрета отдельно
+	// Recover each byte of the secret separately
 	for byteIndex := 0; byteIndex < secretLen; byteIndex++ {
-		// Собираем точки для интерполяции
+		// Collect points for interpolation
 		xs := make([]byte, len(shares))
 		ys := make([]byte, len(shares))
 		
@@ -181,14 +181,14 @@ func Combine(shares []Share) ([]byte, error) {
 			ys[i] = share.Value[byteIndex]
 		}
 		
-		// Используем интерполяцию Лагранжа для восстановления свободного члена
+		// Use Lagrange interpolation to recover the constant term
 		secret[byteIndex] = lagrangeInterpolation(xs, ys)
 	}
 	
 	return secret, nil
 }
 
-// lagrangeInterpolation восстанавливает свободный член полинома (значение в точке 0)
+// lagrangeInterpolation recovers the constant term of the polynomial (value at point 0)
 func lagrangeInterpolation(xs, ys []byte) byte {
 	var result byte
 	
@@ -211,19 +211,19 @@ func lagrangeInterpolation(xs, ys []byte) byte {
 	return result
 }
 
-// ShareToString преобразует Share в строковое представление
+// ShareToString converts a Share to string representation
 func ShareToString(share Share) string {
 	return fmt.Sprintf("%d:%x", share.ID, share.Value)
 }
 
-// StringToShare преобразует строковое представление в Share
+// StringToShare converts string representation to Share
 func StringToShare(s string) (Share, error) {
 	var share Share
 	var hexValue string
 	
 	n, err := fmt.Sscanf(s, "%d:%s", &share.ID, &hexValue)
 	if err != nil || n != 2 {
-		return Share{}, errors.New("неверный формат части")
+		return Share{}, errors.New("invalid part format")
 	}
 	
 	value := make([]byte, len(hexValue)/2)
@@ -231,7 +231,7 @@ func StringToShare(s string) (Share, error) {
 		var b byte
 		n, err := fmt.Sscanf(hexValue[i:i+2], "%02x", &b)
 		if err != nil || n != 1 {
-			return Share{}, errors.New("неверный формат hex")
+			return Share{}, errors.New("invalid hex format")
 		}
 		value[i/2] = b
 	}

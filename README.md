@@ -1,93 +1,93 @@
-# Shamir CLI - Разделение секретов по алгоритму Шамира
+# Shamir CLI - Secret Sharing with Shamir's Algorithm
 
-CLI приложение для разделения строки на части с возможностью восстановления по меньшему количеству частей, используя алгоритм Шамира.
+CLI application for splitting a string into parts with the ability to recover from fewer parts using Shamir's secret sharing algorithm.
 
-## Что это такое?
+## What is it?
 
-Алгоритм Шамира (Shamir's Secret Sharing) - это криптографический метод, который позволяет разделить секрет на n частей, при этом для восстановления секрета требуется k частей (где k < n). Это создает пороговую схему разделения секрета.
+Shamir's Secret Sharing is a cryptographic method that allows splitting a secret into n parts, where k parts are required for recovery (where k < n). This creates a threshold secret sharing scheme.
 
-**Основные принципы:**
-- Секрет разделяется на несколько частей
-- Для восстановления нужно собрать минимальное количество частей (порог)
-- Меньше частей, чем порог, не позволяет восстановить секрет
-- Каждая часть выглядит как случайные данные
+**Key principles:**
+- The secret is divided into multiple parts
+- A minimum number of parts (threshold) is needed for recovery
+- Fewer parts than the threshold cannot recover the secret
+- Each part looks like random data
 
-## Установка
+## Installation
 
 ```bash
 go mod tidy
 go build -o shamir-cli
 ```
 
-## Использование
+## Usage
 
-### Разделение секрета
+### Splitting a secret
 
 ```bash
-./shamir-cli split "Мой секрет" 5 3
+./shamir-cli split "My secret" 5 3
 ```
 
-Это разделит строку "Мой секрет" на 5 частей, где для восстановления потребуется минимум 3 части.
+This will split the string "My secret" into 5 parts, where a minimum of 3 parts will be required for recovery.
 
-### Восстановление секрета
+### Recovering a secret
 
 ```bash
 ./shamir-cli combine "1:d2b8c1a5,2:f4e3d2c1,3:a6b5c4d3"
 ```
 
-Восстанавливает секрет из указанных частей.
+Recovers the secret from the specified parts.
 
-### Тестирование
+### Testing
 
 ```bash
 ./shamir-cli test
 ```
 
-Запускает встроенный тест для проверки работы алгоритма.
+Runs the built-in test to verify the algorithm's functionality.
 
-## Команды
+## Commands
 
-- `split [строка] [общее_количество] [минимальное_количество]` - разделить секрет
-- `combine [части_через_запятую]` - восстановить секрет
-- `test` - запустить тест
-- `help` - показать справку
+- `split [string] [total_parts] [threshold]` - split a secret
+- `combine [parts_separated_by_commas]` - recover a secret
+- `test` - run the algorithm test
+- `help` - show help
 
-## Примеры
+## Examples
 
 ```bash
-# Разделить на 7 частей, восстановление по 4
-./shamir-cli split "Секретный пароль" 7 4
+# Split into 7 parts, recover with 4
+./shamir-cli split "Secret password" 7 4
 
-# Восстановить из частей
+# Recover from parts
 ./shamir-cli combine "1:a1b2c3,2:d4e5f6,3:g7h8i9,4:j1k2l3"
 
-# Минимальная схема
+# Minimal scheme
 ./shamir-cli split "test" 3 2
 
-# Тест алгоритма
+# Test the algorithm
 ./shamir-cli test
 ```
 
-## Практические применения
+## Practical Applications
 
-1. **Безопасное хранение паролей** - разделите пароль между несколькими людьми
-2. **Резервное копирование ключей** - защитите криптографические ключи
-3. **Корпоративная безопасность** - требуйте участия нескольких сотрудников для доступа
-4. **Семейная безопасность** - доступ к важным данным только при участии нескольких членов семьи
+1. **Secure password storage** - split passwords between multiple people
+2. **Key backup** - protect cryptographic keys
+3. **Corporate security** - require participation of multiple employees for access
+4. **Family security** - access to important data only with participation of multiple family members
 
-## Технические особенности
+## Technical Features
 
-- Максимум 255 частей
-- Минимум 2 части для восстановления
-- Использует арифметику в конечном поле GF(2^8)
-- Основан на полиномиальной интерполяции Лагранжа
-- Каждый запуск создает новые случайные части
+- Maximum 255 parts
+- Minimum 2 parts for recovery
+- Uses arithmetic in finite field GF(2^8)
+- Based on Lagrange polynomial interpolation
+- Each run creates new random parts
 
-## Безопасность
+## Security
 
-- Части выглядят как случайные данные
-- Невозможно восстановить секрет с количеством частей меньше порога
-- Алгоритм криптографически стойкий
-- Не требует дополнительных ключей или паролей
+- Parts look like random data
+- Impossible to recover secret with fewer parts than threshold
+- Cryptographically secure algorithm
+- No additional keys or passwords required
 
-Подробные примеры использования смотрите в файле `examples.md`.
+See detailed usage examples in the `examples.md` file.

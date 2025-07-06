@@ -13,74 +13,74 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "shamir-cli",
-	Short: "CLI приложение для разделения секретов по алгоритму Шамира",
-	Long: `Приложение для разделения строки на части с возможностью восстановления 
-по меньшему количеству частей, используя алгоритм Шамира.`,
+	Short: "CLI application for secret sharing using Shamir's algorithm",
+	Long: `Application for splitting a string into parts with the ability to recover
+from fewer parts using Shamir's secret sharing algorithm.`,
 }
 
 var splitCmd = &cobra.Command{
-	Use:   "split [строка] [общее количество частей] [минимальное количество для восстановления]",
-	Short: "Разделить строку на части",
-	Long: `Разделяет входную строку на указанное количество частей, где для восстановления 
-требуется минимальное количество частей (порог).`,
+	Use:   "split [string] [total_parts] [threshold]",
+	Short: "Split a string into parts",
+	Long: `Splits the input string into the specified number of parts, where a minimum
+number of parts (threshold) is required for recovery.`,
 	Args: cobra.ExactArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		secret := args[0]
 		n, err := strconv.Atoi(args[1])
 		if err != nil {
-			fmt.Printf("Ошибка: неверное количество частей '%s'\n", args[1])
+			fmt.Printf("Error: invalid number of parts '%s'\n", args[1])
 			os.Exit(1)
 		}
 		
 		k, err := strconv.Atoi(args[2])
 		if err != nil {
-			fmt.Printf("Ошибка: неверный порог '%s'\n", args[2])
+			fmt.Printf("Error: invalid threshold '%s'\n", args[2])
 			os.Exit(1)
 		}
 		
 		if k < 2 {
-			fmt.Println("Ошибка: минимальное количество частей для восстановления должно быть не менее 2")
+			fmt.Println("Error: minimum number of parts for recovery must be at least 2")
 			os.Exit(1)
 		}
 		
 		if n < k {
-			fmt.Println("Ошибка: общее количество частей не может быть меньше минимального")
+			fmt.Println("Error: total number of parts cannot be less than threshold")
 			os.Exit(1)
 		}
 		
 		if n > 255 {
-			fmt.Println("Ошибка: общее количество частей не может быть больше 255")
+			fmt.Println("Error: total number of parts cannot be greater than 255")
 			os.Exit(1)
 		}
 		
 		shares, err := shamir.Split([]byte(secret), n, k)
 		if err != nil {
-			fmt.Printf("Ошибка при разделении: %v\n", err)
+			fmt.Printf("Error during splitting: %v\n", err)
 			os.Exit(1)
 		}
 		
-		fmt.Printf("Секрет разделен на %d частей, для восстановления требуется %d частей:\n\n", n, k)
+		fmt.Printf("Secret split into %d parts, %d parts required for recovery:\n\n", n, k)
 		for i, share := range shares {
-			fmt.Printf("Часть %d: %s\n", i+1, shamir.ShareToString(share))
+			fmt.Printf("Part %d: %s\n", i+1, shamir.ShareToString(share))
 		}
 		
-		fmt.Printf("\nДля восстановления секрета используйте команду:\n")
-		fmt.Printf("shamir-cli combine \"[части через запятую]\"\n")
-		fmt.Printf("Например: shamir-cli combine \"%s,%s\"\n", 
+		fmt.Printf("\nTo recover the secret use the command:\n")
+		fmt.Printf("shamir-cli combine \"[parts_separated_by_commas]\"\n")
+		fmt.Printf("Example: shamir-cli combine \"%s,%s\"\n", 
 			shamir.ShareToString(shares[0]), shamir.ShareToString(shares[1]))
 	},
 }
 
 var combineCmd = &cobra.Command{
-	Use:   "combine [части через запятую]",
-	Short: "Восстановить строку из частей",
-	Long: `Восстанавливает оригинальную строку из частей, разделенных запятыми.
-Каждая часть должна быть в формате "ID:hex_value".`,
+	Use:   "combine [parts_separated_by_commas]",
+	Short: "Recover a string from parts",
+	Long: `Recovers the original string from parts separated by commas.
+Each part must be in the format "ID:hex_value".`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		shareStrings := strings.Split(args[0], ",")
 		if len(shareStrings) < 2 {
-			fmt.Println("Ошибка: необходимо минимум 2 части для восстановления")
+			fmt.Println("Error: minimum 2 parts required for recovery")
 			os.Exit(1)
 		}
 		
@@ -93,79 +93,79 @@ var combineCmd = &cobra.Command{
 			
 			share, err := shamir.StringToShare(shareStr)
 			if err != nil {
-				fmt.Printf("Ошибка при разборе части %d ('%s'): %v\n", i+1, shareStr, err)
+				fmt.Printf("Error parsing part %d ('%s'): %v\n", i+1, shareStr, err)
 				os.Exit(1)
 			}
 			shares = append(shares, share)
 		}
 		
 		if len(shares) < 2 {
-			fmt.Println("Ошибка: необходимо минимум 2 корректные части для восстановления")
+			fmt.Println("Error: minimum 2 valid parts required for recovery")
 			os.Exit(1)
 		}
 		
 		secret, err := shamir.Combine(shares)
 		if err != nil {
-			fmt.Printf("Ошибка при восстановлении: %v\n", err)
+			fmt.Printf("Error during recovery: %v\n", err)
 			os.Exit(1)
 		}
 		
-		fmt.Printf("Восстановленный секрет: %s\n", string(secret))
+		fmt.Printf("Recovered secret: %s\n", string(secret))
 	},
 }
 
 var testCmd = &cobra.Command{
 	Use:   "test",
-	Short: "Запустить тест алгоритма",
-	Long:  `Запускает простой тест для проверки работы алгоритма разделения секретов.`,
+	Short: "Run algorithm test",
+	Long:  `Runs a simple test to verify the secret sharing algorithm functionality.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Тестирование алгоритма Шамира...")
+		fmt.Println("Testing Shamir's algorithm...")
 		
-		// Тест 1: Простая строка
-		secret := "Привет, мир!"
-		fmt.Printf("Исходный секрет: %s\n", secret)
+		// Test 1: Simple string
+		secret := "Hello, World!"
+		fmt.Printf("Original secret: %s\n", secret)
 		
 		shares, err := shamir.Split([]byte(secret), 5, 3)
 		if err != nil {
-			fmt.Printf("Ошибка при разделении: %v\n", err)
+			fmt.Printf("Error during splitting: %v\n", err)
 			return
 		}
 		
-		fmt.Printf("Разделено на %d частей (порог: 3):\n", len(shares))
+		fmt.Printf("Split into %d parts (threshold: 3):\n", len(shares))
 		for i, share := range shares {
-			fmt.Printf("  Часть %d: %s\n", i+1, shamir.ShareToString(share))
+			fmt.Printf("  Part %d: %s\n", i+1, shamir.ShareToString(share))
 		}
 		
-		// Тест восстановления с минимальным количеством частей
+		// Test recovery with minimum number of parts
 		testShares := shares[:3]
 		recovered, err := shamir.Combine(testShares)
 		if err != nil {
-			fmt.Printf("Ошибка при восстановлении: %v\n", err)
+			fmt.Printf("Error during recovery: %v\n", err)
 			return
 		}
 		
-		fmt.Printf("Восстановлено из 3 частей: %s\n", string(recovered))
+		fmt.Printf("Recovered from 3 parts: %s\n", string(recovered))
 		
 		if string(recovered) == secret {
-			fmt.Println("✓ Тест пройден успешно!")
+			fmt.Println("✓ Test passed successfully!")
 		} else {
-			fmt.Println("✗ Тест провален!")
+			fmt.Println("✗ Test failed!")
 		}
 		
-		// Тест 2: Восстановление с большим количеством частей
+		// Test 2: Recovery with more parts
 		testShares = shares[:4]
 		recovered, err = shamir.Combine(testShares)
 		if err != nil {
-			fmt.Printf("Ошибка при восстановлении: %v\n", err)
+			fmt.Printf("Error during recovery: %v\n", err)
 			return
 		}
 		
-		fmt.Printf("Восстановлено из 4 частей: %s\n", string(recovered))
+		fmt.Printf("Recovered from 4 parts: %s\n", string(recovered))
 		
 		if string(recovered) == secret {
-			fmt.Println("✓ Тест с 4 частями пройден успешно!")
+			fmt.Println("✓ Test with 4 parts passed successfully!")
 		} else {
-			fmt.Println("✗ Тест с 4 частями провален!")
+			fmt.Println("✗ Test with 4 parts failed!")
 		}
 	},
 }
