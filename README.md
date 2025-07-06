@@ -37,19 +37,12 @@ This will split the string "My secret" into 5 parts, where a minimum of 3 parts 
 
 Recovers the secret from the specified parts.
 
-### Testing
 
-```bash
-./shamir-cli test
-```
-
-Runs the built-in test to verify the algorithm's functionality.
 
 ## Commands
 
 - `split [string] [total_parts] [threshold]` - split a secret
 - `combine [parts_separated_by_commas]` - recover a secret
-- `test` - run the algorithm test
 - `help` - show help
 
 ## Examples
@@ -63,9 +56,6 @@ Runs the built-in test to verify the algorithm's functionality.
 
 # Minimal scheme
 ./shamir-cli split "test" 3 2
-
-# Test the algorithm
-./shamir-cli test
 ```
 
 ## Practical Applications

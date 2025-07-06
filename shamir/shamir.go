@@ -41,7 +41,7 @@ func gfMulPrimitive(a, b byte) byte {
 	if a == 0 || b == 0 {
 		return 0
 	}
-	
+
 	var result byte
 	for i := 0; i < 8; i++ {
 		if (b & 1) == 1 {
@@ -62,7 +62,7 @@ func gfInvPrimitive(a byte) byte {
 	if a == 0 {
 		return 0
 	}
-	
+
 	// Try all possible values
 	for i := 1; i < 256; i++ {
 		if gfMulPrimitive(a, byte(i)) == 1 {
@@ -97,15 +97,15 @@ func evaluatePolynomial(coeffs []byte, x byte) byte {
 	if len(coeffs) == 0 {
 		return 0
 	}
-	
+
 	result := coeffs[0]
 	xPow := byte(1)
-	
+
 	for i := 1; i < len(coeffs); i++ {
 		xPow = gfMul(xPow, x)
 		result = gfAdd(result, gfMul(coeffs[i], xPow))
 	}
-	
+
 	return result
 }
 
@@ -120,27 +120,27 @@ func Split(secret []byte, n, k int) ([]Share, error) {
 	if n > 255 {
 		return nil, errors.New("n cannot be greater than 255")
 	}
-	
+
 	shares := make([]Share, n)
-	
+
 	// For each byte of the secret, create a separate polynomial
 	for byteIndex := 0; byteIndex < len(secret); byteIndex++ {
 		// Create random coefficients for polynomial of degree k-1
 		coeffs := make([]byte, k)
 		coeffs[0] = secret[byteIndex] // constant term is the secret byte
-		
+
 		// Generate random coefficients for other degrees
 		for i := 1; i < k; i++ {
 			randomBytes := make([]byte, 1)
 			rand.Read(randomBytes)
 			coeffs[i] = randomBytes[0]
 		}
-		
+
 		// Calculate polynomial values for each part
 		for i := 0; i < n; i++ {
 			shareID := byte(i + 1) // Share ID (from 1 to n)
 			shareValue := evaluatePolynomial(coeffs, shareID)
-			
+
 			if byteIndex == 0 {
 				shares[i] = Share{
 					ID:    shareID,
@@ -150,7 +150,7 @@ func Split(secret []byte, n, k int) ([]Share, error) {
 			shares[i].Value[byteIndex] = shareValue
 		}
 	}
-	
+
 	return shares, nil
 }
 
@@ -159,7 +159,7 @@ func Combine(shares []Share) ([]byte, error) {
 	if len(shares) < 2 {
 		return nil, errors.New("minimum 2 parts required")
 	}
-	
+
 	// Check that all parts have the same length
 	secretLen := len(shares[0].Value)
 	for i := 1; i < len(shares); i++ {
@@ -167,47 +167,47 @@ func Combine(shares []Share) ([]byte, error) {
 			return nil, errors.New("all parts must have the same length")
 		}
 	}
-	
+
 	secret := make([]byte, secretLen)
-	
+
 	// Recover each byte of the secret separately
 	for byteIndex := 0; byteIndex < secretLen; byteIndex++ {
 		// Collect points for interpolation
 		xs := make([]byte, len(shares))
 		ys := make([]byte, len(shares))
-		
+
 		for i, share := range shares {
 			xs[i] = share.ID
 			ys[i] = share.Value[byteIndex]
 		}
-		
+
 		// Use Lagrange interpolation to recover the constant term
 		secret[byteIndex] = lagrangeInterpolation(xs, ys)
 	}
-	
+
 	return secret, nil
 }
 
 // lagrangeInterpolation recovers the constant term of the polynomial (value at point 0)
 func lagrangeInterpolation(xs, ys []byte) byte {
 	var result byte
-	
+
 	for i := 0; i < len(xs); i++ {
 		var numerator, denominator byte = 1, 1
-		
+
 		for j := 0; j < len(xs); j++ {
 			if i != j {
 				numerator = gfMul(numerator, xs[j])
 				denominator = gfMul(denominator, gfAdd(xs[i], xs[j]))
 			}
 		}
-		
+
 		if denominator != 0 {
 			lagrangeBasis := gfMul(numerator, gfInv(denominator))
 			result = gfAdd(result, gfMul(ys[i], lagrangeBasis))
 		}
 	}
-	
+
 	return result
 }
 
@@ -220,12 +220,17 @@ func ShareToString(share Share) string {
 func StringToShare(s string) (Share, error) {
 	var share Share
 	var hexValue string
-	
+
 	n, err := fmt.Sscanf(s, "%d:%s", &share.ID, &hexValue)
 	if err != nil || n != 2 {
 		return Share{}, errors.New("invalid part format")
 	}
-	
+
+	// Check if hex string has even length
+	if len(hexValue)%2 != 0 {
+		return Share{}, errors.New("invalid hex format")
+	}
+
 	value := make([]byte, len(hexValue)/2)
 	for i := 0; i < len(hexValue); i += 2 {
 		var b byte
@@ -235,7 +240,7 @@ func StringToShare(s string) (Share, error) {
 		}
 		value[i/2] = b
 	}
-	
+
 	share.Value = value
 	return share, nil
 }

@@ -75,11 +75,9 @@
 - Total number of parts must be >= threshold
 
 ### Testing
+The algorithm is thoroughly tested with Go unit tests. Run them with:
 ```bash
-# Built-in algorithm test
-./shamir-cli test
-
-# Result will show algorithm success
+go test ./shamir
 ```
 
 ## Usage Scenarios
