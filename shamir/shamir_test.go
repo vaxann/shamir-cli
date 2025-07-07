@@ -73,8 +73,9 @@ func TestBasicSplitAndCombine(t *testing.T) {
 		if share.ID != byte(i+1) {
 			t.Errorf("Share %d has wrong ID: got %d, want %d", i, share.ID, i+1)
 		}
-		if len(share.Value) != len(secret) {
-			t.Errorf("Share %d has wrong length: got %d, want %d", i, len(share.Value), len(secret))
+		// Now shares include checksum, so length should be len(secret) + 1
+		if len(share.Value) != len(secret)+1 {
+			t.Errorf("Share %d has wrong length: got %d, want %d", i, len(share.Value), len(secret)+1)
 		}
 	}
 
@@ -355,6 +356,104 @@ func TestRandomnessOfShares(t *testing.T) {
 
 	if !bytes.Equal(recovered1, secret) || !bytes.Equal(recovered2, secret) {
 		t.Error("Both splits should recover the original secret")
+	}
+}
+
+func TestChecksumValidation(t *testing.T) {
+	secret := []byte("Test secret with checksum")
+	n, k := 5, 3
+
+	// Split the secret
+	shares, err := Split(secret, n, k)
+	if err != nil {
+		t.Fatalf("Split failed: %v", err)
+	}
+
+	// Test successful recovery with valid checksum
+	t.Run("ValidChecksum", func(t *testing.T) {
+		recovered, err := Combine(shares[:k])
+		if err != nil {
+			t.Fatalf("Combine failed: %v", err)
+		}
+
+		if !bytes.Equal(recovered, secret) {
+			t.Errorf("Recovery failed: got %q, want %q", string(recovered), string(secret))
+		}
+	})
+
+	// Test recovery failure with corrupted share
+	t.Run("CorruptedShare", func(t *testing.T) {
+		// Create a copy of shares and corrupt one
+		corruptedShares := make([]Share, k)
+		for i := 0; i < k; i++ {
+			corruptedShares[i] = Share{
+				ID:    shares[i].ID,
+				Value: make([]byte, len(shares[i].Value)),
+			}
+			copy(corruptedShares[i].Value, shares[i].Value)
+		}
+
+		// Corrupt a byte in the middle of one share
+		if len(corruptedShares[0].Value) > 5 {
+			corruptedShares[0].Value[5] ^= 0xFF // Flip all bits
+		}
+
+		_, err := Combine(corruptedShares)
+		if err == nil || !bytes.Contains([]byte(err.Error()), []byte("checksum verification failed")) {
+			t.Error("Combine should fail with checksum error for corrupted share")
+		}
+	})
+
+	// Test recovery failure with modified checksum byte
+	t.Run("ModifiedChecksum", func(t *testing.T) {
+		// Create a copy of shares and modify the checksum byte (last byte)
+		modifiedShares := make([]Share, k)
+		for i := 0; i < k; i++ {
+			modifiedShares[i] = Share{
+				ID:    shares[i].ID,
+				Value: make([]byte, len(shares[i].Value)),
+			}
+			copy(modifiedShares[i].Value, shares[i].Value)
+		}
+
+		// Modify the last byte (checksum) in all shares
+		for i := 0; i < k; i++ {
+			lastIdx := len(modifiedShares[i].Value) - 1
+			modifiedShares[i].Value[lastIdx] ^= 0x01 // Flip one bit
+		}
+
+		_, err := Combine(modifiedShares)
+		if err == nil || !bytes.Contains([]byte(err.Error()), []byte("checksum verification failed")) {
+			t.Error("Combine should fail with checksum error for modified checksum")
+		}
+	})
+}
+
+func TestChecksumWithDifferentSecrets(t *testing.T) {
+	secrets := [][]byte{
+		[]byte(""),                     // Empty secret
+		[]byte("a"),                    // Single character
+		[]byte("Hello, World!"),        // Normal string
+		{0x00, 0xFF, 0x00, 0xFF},       // Binary data
+		bytes.Repeat([]byte("x"), 100), // Long string
+	}
+
+	for i, secret := range secrets {
+		t.Run(fmt.Sprintf("Secret_%d", i), func(t *testing.T) {
+			shares, err := Split(secret, 5, 3)
+			if err != nil {
+				t.Fatalf("Split failed: %v", err)
+			}
+
+			recovered, err := Combine(shares[:3])
+			if err != nil {
+				t.Fatalf("Combine failed: %v", err)
+			}
+
+			if !bytes.Equal(recovered, secret) {
+				t.Errorf("Recovery failed: got %x, want %x", recovered, secret)
+			}
+		})
 	}
 }
 

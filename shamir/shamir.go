@@ -109,6 +109,15 @@ func evaluatePolynomial(coeffs []byte, x byte) byte {
 	return result
 }
 
+// calculateChecksum calculates XOR checksum of all bytes
+func calculateChecksum(data []byte) byte {
+	var checksum byte
+	for _, b := range data {
+		checksum ^= b
+	}
+	return checksum
+}
+
 // Split divides a secret into n parts, where k parts are needed for recovery
 func Split(secret []byte, n, k int) ([]Share, error) {
 	if k < 2 {
@@ -121,13 +130,17 @@ func Split(secret []byte, n, k int) ([]Share, error) {
 		return nil, errors.New("n cannot be greater than 255")
 	}
 
+	// Add checksum to the secret
+	checksum := calculateChecksum(secret)
+	secretWithChecksum := append(secret, checksum)
+
 	shares := make([]Share, n)
 
-	// For each byte of the secret, create a separate polynomial
-	for byteIndex := 0; byteIndex < len(secret); byteIndex++ {
+	// For each byte of the secret (including checksum), create a separate polynomial
+	for byteIndex := 0; byteIndex < len(secretWithChecksum); byteIndex++ {
 		// Create random coefficients for polynomial of degree k-1
 		coeffs := make([]byte, k)
-		coeffs[0] = secret[byteIndex] // constant term is the secret byte
+		coeffs[0] = secretWithChecksum[byteIndex] // constant term is the secret byte
 
 		// Generate random coefficients for other degrees
 		for i := 1; i < k; i++ {
@@ -144,7 +157,7 @@ func Split(secret []byte, n, k int) ([]Share, error) {
 			if byteIndex == 0 {
 				shares[i] = Share{
 					ID:    shareID,
-					Value: make([]byte, len(secret)),
+					Value: make([]byte, len(secretWithChecksum)),
 				}
 			}
 			shares[i].Value[byteIndex] = shareValue
@@ -168,7 +181,7 @@ func Combine(shares []Share) ([]byte, error) {
 		}
 	}
 
-	secret := make([]byte, secretLen)
+	secretWithChecksum := make([]byte, secretLen)
 
 	// Recover each byte of the secret separately
 	for byteIndex := 0; byteIndex < secretLen; byteIndex++ {
@@ -182,7 +195,20 @@ func Combine(shares []Share) ([]byte, error) {
 		}
 
 		// Use Lagrange interpolation to recover the constant term
-		secret[byteIndex] = lagrangeInterpolation(xs, ys)
+		secretWithChecksum[byteIndex] = lagrangeInterpolation(xs, ys)
+	}
+
+	// Verify checksum
+	if len(secretWithChecksum) < 1 {
+		return nil, errors.New("recovered data is too short")
+	}
+
+	secret := secretWithChecksum[:len(secretWithChecksum)-1]
+	expectedChecksum := secretWithChecksum[len(secretWithChecksum)-1]
+	actualChecksum := calculateChecksum(secret)
+
+	if expectedChecksum != actualChecksum {
+		return nil, errors.New("checksum verification failed: unable to recover original string")
 	}
 
 	return secret, nil
