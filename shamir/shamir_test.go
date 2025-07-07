@@ -431,10 +431,10 @@ func TestChecksumValidation(t *testing.T) {
 
 func TestChecksumWithDifferentSecrets(t *testing.T) {
 	secrets := [][]byte{
-		[]byte(""),                    // Empty secret
-		[]byte("a"),                   // Single character
-		[]byte("Hello, World!"),       // Normal string
-		{0x00, 0xFF, 0x00, 0xFF},      // Binary data
+		[]byte(""),                     // Empty secret
+		[]byte("a"),                    // Single character
+		[]byte("Hello, World!"),        // Normal string
+		{0x00, 0xFF, 0x00, 0xFF},       // Binary data
 		bytes.Repeat([]byte("x"), 100), // Long string
 	}
 
